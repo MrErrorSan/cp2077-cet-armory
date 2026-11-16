@@ -1,0 +1,1 @@
+window.CET_IMAGES = {};

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CET Armory</title>
+<meta name="description" content="Browse every Cyberpunk 2077 item from the Cyber Engine Tweaks command list in an inventory-style screen, filter by tier and type, and copy the console commands in one go.">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="deco-bin" aria-hidden="true">1101
+0011
+1000
+0101
+1011
+
+1001
+0111
+1000
+0001
+1111
+
+0110
+1010
+0001
+1101</div>
+
+<header class="hdr">
+  <div class="hdr__stat"><b id="count">0</b><span>Showing</span></div>
+  <nav class="hdr__nav" aria-label="Item categories">
+    <span class="key" aria-hidden="true">Q</span>
+    <div id="tabs" class="tabs"></div>
+    <span class="key" aria-hidden="true">E</span>
+  </nav>
+  <div class="hdr__queue"><span class="hdr__bag" aria-hidden="true">&#9935;</span><b id="queue-count">0</b><span>/ queue</span></div>
+</header>
+
+<main class="layout">
+  <aside id="rail" class="rail" aria-label="Filters">
+    <button id="btn-filters" class="filters-toggle" type="button" aria-expanded="false" aria-controls="filters">Filters</button>
+    <div id="filters"></div>
+  </aside>
+
+  <section class="centre" aria-label="Items">
+    <div class="toolbar">
+      <label class="search">
+        <span class="visually-hidden">Search items</span>
+        <input id="search" type="search" placeholder="Search name, code or tag…  [/]" autocomplete="off" spellcheck="false">
+      </label>
+      <label class="sort">
+        <span class="sort__label">Sort</span>
+        <select id="sort">
+          <option value="sheet">Default</option>
+          <option value="name">Name</option>
+          <option value="tier">Tier</option>
+        </select>
+      </label>
+    </div>
+    <div id="tab-notes" class="notice" role="note" hidden></div>
+    <div id="results" class="results"></div>
+    <p id="empty" class="empty" hidden>No items match these filters</p>
+  </section>
+
+  <aside class="side" aria-label="Selected item and command queue">
+    <div id="card" class="card--empty"></div>
+    <section class="queue" aria-labelledby="queue-head">
+      <h2 id="queue-head" class="queue__head"><span aria-hidden="true">&#9935;</span> Command queue</h2>
+      <div id="queue-list" class="queue__list"></div>
+    </section>
+  </aside>
+</main>
+
+<footer class="foot">
+  <div class="foot__related">
+    <button id="btn-credits" class="related" type="button"><span aria-hidden="true">&#9635;</span> Credits &amp; sources</button>
+    <button id="btn-help" class="related" type="button"><span aria-hidden="true">?</span> How to use</button>
+    <span class="foot__note" aria-hidden="true">MODEL LINE 1.2001A · SOURCE CONSOLECOMMANDLIST_2.0.XLSX</span>
+  </div>
+  <div class="hints">
+    <button id="btn-copy" class="hint" type="button"><span class="key">C</span>Copy all commands</button>
+    <button id="btn-clear" class="hint" type="button"><span class="key">X</span>Clear queue</button>
+    <span class="hint hint--static"><span class="key">ESC</span>Back</span>
+  </div>
+</footer>
+
+<dialog id="modal-credits" class="modal" aria-labelledby="credits-title">
+  <div class="modal__strip">Credits &amp; sources</div>
+  <div class="modal__body">
+    <h2 id="credits-title" class="modal__title">CET Armory</h2>
+    <h3 class="modal__sub">Item data</h3>
+    <p>"Cyber Engine Tweaks console command list" by the CET team, shared in the redmodding Discord #cet-support and linked from the <a href="https://wiki.redmodding.org/cyber-engine-tweaks/console/console/how-do-i" target="_blank" rel="noopener">CET wiki</a>. Every command on this site comes from that spreadsheet.</p>
+    <h3 class="modal__sub">Console</h3>
+    <p><a href="https://github.com/maximegmd/CyberEngineTweaks" target="_blank" rel="noopener">Cyber Engine Tweaks</a> by maximegmd and contributors.</p>
+    <h3 class="modal__sub">Images</h3>
+    <p>Item images from the <a href="https://cyberpunk.fandom.com" target="_blank" rel="noopener">Cyberpunk Wiki</a> (CC BY-SA). Images © CD PROJEKT RED. Items without a wiki image use drawn placeholders.</p>
+    <h3 class="modal__sub">Font</h3>
+    <p>Rajdhani by Indian Type Foundry, SIL Open Font License 1.1.</p>
+    <p class="modal__lore">Unofficial fan project, not affiliated with or endorsed by CD PROJEKT RED. Cyberpunk 2077 and related assets are trademarks and © of CD PROJEKT S.A.</p>
+  </div>
+  <form method="dialog" class="modal__foot"><button class="hint" type="submit"><span class="key">ESC</span>Close</button></form>
+</dialog>
+
+<dialog id="modal-help" class="modal" aria-labelledby="help-title">
+  <div class="modal__strip">How to use</div>
+  <div class="modal__body">
+    <h2 id="help-title" class="modal__title">Spawn items with CET</h2>
+    <ol class="modal__steps">
+      <li>Install <a href="https://github.com/maximegmd/CyberEngineTweaks" target="_blank" rel="noopener">Cyber Engine Tweaks</a> for your game version.</li>
+      <li>In game, press the console key. The default is <span class="key">~</span>; CET asks you to set it on its first launch.</li>
+      <li>Browse and filter the items here, then add the ones you want to the queue.</li>
+      <li>Press <span class="key">C</span> or "Copy all commands".</li>
+      <li>Paste into the CET console and press <span class="key">Enter</span>.</li>
+    </ol>
+    <p class="modal__lore">Weapons without a tier scale with your level when spawned.</p>
+    <p class="modal__lore">Some commands on the Cheats tab are marked as broken on the current patch by the sheet itself.</p>
+    <h3 class="modal__sub">Keys</h3>
+    <p><span class="key">Q</span> <span class="key">E</span> switch tab · <span class="key">/</span> search · <span class="key">C</span> copy all · <span class="key">X</span> clear queue · <span class="key">ESC</span> close card or clear search</p>
+  </div>
+  <form method="dialog" class="modal__foot"><button class="hint" type="submit"><span class="key">ESC</span>Close</button></form>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="data/items.js"></script>
+<script src="data/images.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/filters.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

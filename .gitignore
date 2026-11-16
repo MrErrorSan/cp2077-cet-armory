@@ -1,0 +1,5 @@
+.superpowers/
+data/build/
+__pycache__/
+data/source/*
+!data/source/ConsoleCommandList_2.0.xlsx
