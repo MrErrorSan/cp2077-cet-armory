@@ -300,7 +300,7 @@ a { color: var(--cyan); }
   width: 6px;
   background: var(--rc, var(--r-common));
 }
-.tile::after {
+.tile.is-selected::after {
   content: '';
   position: absolute;
   right: 0;
