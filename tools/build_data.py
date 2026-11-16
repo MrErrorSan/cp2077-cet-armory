@@ -12,6 +12,9 @@ ROOT = Path(__file__).resolve().parent.parent
 XLSX = ROOT / "data/source/ConsoleCommandList_2.0.xlsx"
 OUT_JS = ROOT / "site/data/items.js"
 OUT_JSON = ROOT / "data/build/items.json"
+# Researched (not in the sheet): clothing that still gives Armor in 2.x, with wiki sources.
+ARMOR_JSON = ROOT / "data/research/clothing-armor.json"
+FLAGS = ("iconic", "pl", "crafted", "armor")
 
 M = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 R_ID = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
@@ -92,6 +95,135 @@ TITLE_TIER_RE = re.compile(r"\bTier (\d)(\+{0,2})")
 SHEET_FIXES = {
     "cheats": {"gamedataStatType.Stamina gameStatModifierType": "gamedataStatType.Stamina, gameStatModifierType"},
 }
+# Garment type from the clothing code prefix (Items.Balaclava_01_... -> Balaclavas); the sheet only has the slot.
+CLOTHING_KINDS = {
+    "Helmet": "Helmets", "Hat": "Hats", "Cap": "Caps", "Balaclava": "Balaclavas",
+    "Mask": "Masks", "Glasses": "Glasses", "Visor": "Visors", "Scarf": "Scarves", "Tech": "Tech gear",
+    "Jacket": "Jackets", "FormalJacket": "Formal jackets", "Coat": "Coats", "Vest": "Vests", "Dress": "Dresses",
+    "Jumpsuit": "Jumpsuits", "TightJumpsuit": "Jumpsuits", "LooseShirt": "Shirts", "Shirt": "Shirts",
+    "FormalShirt": "Formal shirts", "TShirt": "T-shirts", "Tshirt": "T-shirts", "Undershirt": "Undershirts",
+    "Pants": "Pants", "FormalPants": "Formal pants", "Shorts": "Shorts", "FormalSkirt": "Skirts",
+    "Boots": "Boots", "CasualShoes": "Shoes", "FormalShoes": "Formal shoes",
+}
+CLOTHING_OTHER = "Quest & special"
+# Placeholders the sheet leaves in a command for the player to replace by hand: turn them into a picker / text box.
+# Options show the in-game name and put the game's own value in the command
+# (gamedataStatType for attributes, gamedataProficiencyType for skills; see data/research/extra-commands.json sources).
+ATTRIBUTES = [{"label": "Body", "value": "Strength"}, {"label": "Reflexes", "value": "Reflexes"},
+              {"label": "Technical Ability", "value": "TechnicalAbility"}, {"label": "Intelligence", "value": "Intelligence"},
+              {"label": "Cool", "value": "Cool"}]
+SKILLS = [{"label": "Headhunter", "value": "CoolSkill"}, {"label": "Netrunner", "value": "IntelligenceSkill"},
+          {"label": "Shinobi", "value": "ReflexesSkill"}, {"label": "Solo", "value": "StrengthSkill"},
+          {"label": "Engineer", "value": "TechnicalAbilitySkill"}]
+PLACEHOLDERS = [
+    ('"Attribute Category"', '"{choice}"', "Attribute", ATTRIBUTES,
+     "Sets the attribute directly (1-20); it does not give or take attribute points."),
+    ("gamedataProficiencyType.SKILLSkill", "gamedataProficiencyType.{choice}", "Skill", SKILLS,
+     "Skill level 1-60. Lowering a skill and raising it again can give its perk points a second time."),
+]
+EXTRA_JSON = ROOT / "data/research/extra-commands.json"
+# Weapons with nudity: the site hides their pictures by default. The game censors them in place since patch 1.5;
+# Items.Preset_Stout_Censored is an old stand-in that is just a plain Electric Baton Alpha.
+NUDITY_CODES = {"Items.Preset_Dildo_Stout", "Items.Preset_Dildo_SexShop"}
+SITE_INFO = {
+    "Items.Preset_Dildo_Stout": "Nudity: when the game's censorship is on, it shows this weapon as a plain cylinder. "
+                                "There is no separate censored weapon in 2.x.",
+    "Items.Preset_Dildo_SexShop": "Nudity: the game censors it in place, like Sir John Phallustiff. No censored code exists.",
+    "Items.Preset_Stout_Censored": "Old censored stand-in for Sir John Phallustiff: in 2.x it is a plain Electric Baton Alpha "
+                                   "without the iconic stats.",
+}
+FACT_PLACEHOLDER = ('GetFactStr("factName")', 'GetFactStr("{value}")')
+
+
+# Starting value for each fill-in command, so it can be added as-is and edited when needed.
+VALUE_DEFAULTS = [
+    ('"Items.money"', "10000"), ('SetLevel("Level"', "60"), ('SetLevel("StreetCred"', "50"),
+    ("DevelopmentPointType.Attribute", "1"), ("DevelopmentPointType.Primary", "1"), ("DevelopmentPointType.Espionage", "1"),
+    ("SetAttribute(", "20"), ("ProficiencyType", "60"), ("gamedataStatType.Humanity", "50"),
+    ("gamedataStatType.", "100"),
+]
+# Cheats with a fixed number ("+100 Max Health"): the number becomes the editable default.
+STAT_NUMBER_RE = re.compile(r'(ModStatPlayer\("\w+",\s*"?)(-?\d+(?:\.\d+)?)(?="?\))')
+HOUR_RE = re.compile(r"(SetGameTimeByHMS\()(\d+)(, 0, 0\))")
+POINT_HINT = "A negative number removes points, e.g. -15"
+
+
+def value_default(template):
+    return next((v for key, v in VALUE_DEFAULTS if key in template), "1")
+
+
+def fixed_value(template, name):
+    """Turn a cheat's hard-coded number into {value}; returns (template, input, name) or None.
+    Flags (value 1, e.g. CanBreatheUnderwater) stay fixed; only the first number is editable, and
+    a repeat of that same number (regen in and out of combat) follows it."""
+    m = HOUR_RE.search(template)
+    if m:
+        return (HOUR_RE.sub(r"\g<1>{value}\g<3>", template, 1),
+                {"kind": "value", "label": "Hour (0-23)", "default": m.group(2), "min": 0, "max": 23},
+                f"Set Time (hour, starts at {m.group(2)}:00)")
+    m = STAT_NUMBER_RE.search(template)
+    if not m or m.group(2) == "1":
+        return None
+    n = m.group(2)
+    out = STAT_NUMBER_RE.sub(lambda x: x.group(1) + ("{value}" if x.group(2) == n else x.group(2)), template)
+    name = re.sub(r"^\+\d+ ", "Add ", name)
+    name = re.sub(r"^100% (.+)$", r"Add \1 %", name)
+    return out, {"kind": "value", "label": "Amount", "default": n}, name
+
+
+# Cheats tab sections: (section, test on name / command / sheet type), first match wins.
+CHEAT_SECTIONS = [
+    ("Upgrade to Legendary", lambda n, c, t: "Conversion to Legendary" in n),
+    ("Vehicles", lambda n, c, t: "GetVehicleSystem" in c),
+    ("Quests & story", lambda n, c, t: t == "Facts" or "Quest" in n or "SetFactStr" in c),
+    ("Equipment", lambda n, c, t: t == "Unequip Slot" or "Equip" in c or "RemoveAllItems" in c or "ClearEquipment" in c),
+    ("World & time", lambda n, c, t: t == "Time" or "Poi" in c or "PrevSys" in c or "ZoneIndicator" in c),
+    ("Health & stats", lambda n, c, t: t in ("Player", "Stats")),
+    ("Combat & abilities", lambda n, c, t: t == "Gameplay"),
+    ("Game & logs", lambda n, c, t: True),
+]
+
+
+CHEAT_SECTION_ORDER = ["Health & stats", "Combat & abilities", "Equipment", "Upgrade to Legendary",
+                       "Quests & story", "World & time", "Vehicles", "Game & logs"]
+NAME_TYPOS = {"Healt ": "Health ", "Infinte Oxigen": "Infinite Oxygen", "Friedly": "Friendly", "Equiped": "Equipped"}
+
+
+def tidy_name(name):
+    """Every fill-in field now starts with a value, so the sheet's "XYZ" placeholder is dropped from names."""
+    name = re.sub(r"\s+to XYZ\.?$|\s*\bXYZ\b", "", name).strip()
+    for old, new in NAME_TYPOS.items():
+        name = name.replace(old, new)
+    return name
+
+
+def cheat_section(name, cmd, sheet_type):
+    return next(sec for sec, test in CHEAT_SECTIONS if test(name, cmd, sheet_type))
+
+
+def armor_rule():
+    d = json.loads(ARMOR_JSON.read_text(encoding="utf-8"))
+    text = f"+{d['armor_min']} to +{d['armor_max']}"
+    return lambda code: text if code in d["codes"] or any((code or "").startswith(p) for p in d["code_prefixes"]) else None
+
+
+def clothing_kind(code):
+    base = (code or "").split(".", 1)[-1]
+    return CLOTHING_KINDS.get(re.split(r"[_0-9]", base)[0], CLOTHING_OTHER)
+
+
+def apply_placeholders(template, inp, notes):
+    """Return (template, input) with the sheet's hand-edit placeholders made fillable."""
+    for old, new, label, options, _ in PLACEHOLDERS:
+        if old in template:
+            inp = dict(inp or {"kind": "value"}, label="Level", choice={"label": label, "options": options})
+            template = template.replace(old, new)
+    if FACT_PLACEHOLDER[0] in template:
+        template = template.replace(*FACT_PLACEHOLDER)
+        inp = {"kind": "value", "label": "Fact name", "text": True}
+    return template, inp
+
+
 NAME_STRIP_RE = re.compile(r"\s*\((?:Tier \d\+{0,2}|Iconic)\)")
 TAG_TIER_RE = re.compile(r"^Tier (\d)$")
 CODE_TIER_RES = [
@@ -258,6 +390,7 @@ def build(xlsx_path=XLSX):
     with zipfile.ZipFile(xlsx_path) as z:
         modified = re.search(r"<dcterms:modified[^>]*>([\d-]{10})", z.read("docProps/core.xml").decode()).group(1)
     tabs, items, counts_out = [], [], {}
+    armor_of = armor_rule()
     for tab, cfg in TABS.items():
         rows, notes = [], []
         for row in sheets[tab.upper()]:
@@ -299,20 +432,57 @@ def build(xlsx_path=XLSX):
                 name = NAME_STRIP_RE.sub("", title).strip() or (code or "").split(".", 1)[-1]
                 tier = v["tier"] or parse_tier(title, code, tier_tags)
                 template, inp, qty = normalise_command(v["cmd"])
+                template, inp = apply_placeholders(template, inp, row.get(cfg["notes"], "") if cfg["notes"] else "")
+                if tab in ("cheats", "progress"):
+                    name = tidy_name(name)
+                if tab == "cheats" and not inp:
+                    fixed = fixed_value(template, name)
+                    if fixed:
+                        template, inp, name = fixed
+                if inp and inp["kind"] == "value" and not inp.get("text"):
+                    inp = dict(inp, default=inp.get("default") or value_default(template))
+                    if "AddDevelopmentPoints" in template:
+                        inp["hint"] = POINT_HINT
+                if tab == "clothing":
+                    group = dict(group, kind=clothing_kind(code))
+                sheet_notes = row.get(cfg["notes"], "").strip() if cfg["notes"] else ""
+                for old, _, _, _, note in PLACEHOLDERS:
+                    if old in v["cmd"]:
+                        sheet_notes = note
+                if tab == "cheats":
+                    group = {"section": cheat_section(name, template, group.get("type"))}
                 item = {
                     "id": f"{tab}-{row['_row']:04d}" + (f"-{v['suffix']}" if v["suffix"] else ""),
                     "tab": tab, "name": name, "tier": tier, "rarity": rarity_of(tier),
                     "iconic": "iconic" in flags, "pl": "pl" in flags, "crafted": "crafted" in flags,
+                    "armor": armor_of(code) if tab == "clothing" else None,
                     "tags": plain, "group": group,
-                    "desc": row.get(cfg["desc"], "").strip(), "notes": row.get(cfg["notes"], "").strip(),
+                    "desc": row.get(cfg["desc"], "").strip(), "notes": sheet_notes,
+                    "nudity": code in NUDITY_CODES, "info": SITE_INFO.get(code, ""),
                     "cmd": template, "code": code, "input": inp,
                     "qty": qty if inp and inp["kind"] == "qty" else None,
                     "icon": _icon(tab, plain), "imageKey": _image_key(name),
                 }
                 tab_items.append(item)
-        present = {f for i in tab_items for f in ("iconic", "pl", "crafted") if i[f]}
+        if tab == "progress":
+            extra = json.loads(EXTRA_JSON.read_text(encoding="utf-8"))
+            for n, x in enumerate(extra["progress"], 1):
+                tab_items.append({
+                    "id": f"progress-x{n:02d}", "tab": tab, "name": x["name"], "tier": None, "rarity": None,
+                    "iconic": False, "pl": False, "crafted": False, "armor": None, "tags": [], "group": {},
+                    "desc": "", "notes": x["notes"], "nudity": False,
+                    "info": "Added by CET Armory (not in the sheet): the game's own call, from its script source.",
+                    "cmd": x["cmd"], "code": None, "input": None, "qty": None,
+                    "icon": _icon(tab, []), "imageKey": _image_key(x["name"])})
+        if tab == "cheats":
+            groups = [{"id": "section", "label": "Section", "values": CHEAT_SECTION_ORDER}]
+        if tab == "clothing":
+            kinds = Counter(i["group"]["kind"] for i in tab_items)
+            values = [k for k, _ in kinds.most_common() if k != CLOTHING_OTHER] + [CLOTHING_OTHER]
+            groups.insert(1, {"id": "kind", "label": "Type", "values": values})
+        present = {f for i in tab_items for f in FLAGS if i[f]}
         tab_entry = {"id": tab, "label": cfg["label"], "layout": cfg["layout"], "groups": groups,
-                     "toggles": [f for f in ("iconic", "pl", "crafted") if f in present]}
+                     "toggles": [f for f in FLAGS if f in present]}
         if notes:
             tab_entry["notes"] = notes
         tabs.append(tab_entry)

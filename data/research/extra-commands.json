@@ -1,0 +1,20 @@
+{
+ "about": "Commands the sheet does not have, added so points can be taken back as well as given. Each one is the call the game itself makes, read in CDPR's script source (mirrored by CDPR-Modding-Documentation, v2.5).",
+ "sources": {
+  "script": "https://github.com/CDPR-Modding-Documentation/Cyberpunk-Scripts/blob/main/scripts/cyberpunk/systems/playerDevelopmentSystem.script",
+  "reset_button": "https://github.com/CDPR-Modding-Documentation/Cyberpunk-Scripts/blob/main/scripts/cyberpunk/UI/fullscreen/perks/newPerks/NewPerksCategoriesGameController.script",
+  "censored_baton": "https://github.com/CDPR-Modding-Documentation/Cyberpunk-Tweaks/blob/main/tweaks/base/gameplay/static_data/database/items/weapons/melee/presets/preset_baton.tweak",
+  "censor_icons": "https://github.com/CDPR-Modding-Documentation/Cyberpunk-Tweaks/blob/main/tweaks/base/gameplay/static_data/database/ui/icons/icons_censored.tweak"
+ },
+ "progress": [
+  {"name": "Reset attributes and perks (refund points)",
+   "cmd": "DD = PlayerDevelopmentSystem.GetInstance(Game.GetPlayer()):GetDevelopmentData(Game.GetPlayer()); DD:ResetNewPerks(); DD:ResetAttributes()",
+   "notes": "Same as the game's Reset button, but not limited to once: every perk is sold and every attribute goes back to 3; all those points come back as unspent. Then use Add Attribute / Perk Points with a negative number to remove extra points."},
+  {"name": "Reset perks only (refund perk and relic points)",
+   "cmd": "PlayerDevelopmentSystem.GetInstance(Game.GetPlayer()):GetDevelopmentData(Game.GetPlayer()):ResetNewPerks()",
+   "notes": "Sells every perk, including Relic perks; the points come back as unspent."},
+  {"name": "Show unspent points (attribute, perk, relic)",
+   "cmd": "DD = PlayerDevelopmentSystem.GetInstance(Game.GetPlayer()):GetDevelopmentData(Game.GetPlayer()); print(DD:GetDevPoints(gamedataDevelopmentPointType.Attribute), DD:GetDevPoints(gamedataDevelopmentPointType.Primary), DD:GetDevPoints(gamedataDevelopmentPointType.Espionage))",
+   "notes": "Prints three numbers in the CET console: attribute, perk and relic points not spent yet."}
+ ]
+}

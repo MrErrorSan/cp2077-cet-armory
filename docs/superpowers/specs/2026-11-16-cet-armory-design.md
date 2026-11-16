@@ -66,6 +66,9 @@ Tier vocabulary (game, 2.x): Tier 1 Common · 2 Uncommon · 3 Rare · 4 Epic · 
   category (pistol, katana, scope, jacket, quickhack, car…). No tile is ever blank.
 - **R9 Fully static and local**: opens by double-clicking `site/index.html` (no server; data loaded as
   `.js`, not fetched JSON) and the same files deploy to GitHub Pages. No runtime network calls.
+  *Revised:* the wiki CDN refuses scripted downloads, so pictures are hotlinked (400px wiki thumbnails
+  loaded by the visitor's browser). Over http(s) they load; from `file://` the CDN's CORP header blocks
+  them and tiles fall back to the SVG icons. Everything else stays local.
 - **R10 Credits** screen: CET team spreadsheet, CET wiki, Cyberpunk Wiki (images), Rajdhani (OFL), CD
   PROJEKT RED fan-content notice ("not affiliated"). **How to use** screen: install CET, open console
   (`~`), paste.

@@ -33,7 +33,7 @@
     <div id="tabs" class="tabs"></div>
     <span class="key" aria-hidden="true">E</span>
   </nav>
-  <div class="hdr__queue"><span class="hdr__bag" aria-hidden="true">&#9935;</span><b id="queue-count">0</b><span>/ queue</span></div>
+  <button id="btn-queue" class="hdr__queue" type="button" aria-controls="queue" aria-expanded="false" title="Show the command queue"><span class="hdr__bag" aria-hidden="true">&#9935;</span><b id="queue-count">0</b><span>/ queue</span></button>
 </header>
 
 <main class="layout">
@@ -56,17 +56,32 @@
           <option value="tier">Tier</option>
         </select>
       </label>
+      <button id="btn-censor" class="gtoggle" type="button" aria-pressed="true" hidden title="Blur the pictures of weapons that show nudity">Hide nudity <span class="toggle__state">ON</span></button>
+      <button id="btn-group" class="gtoggle" type="button" aria-pressed="true" title="One tile per item, pick the tier or version on the card [G]">Group versions <span class="toggle__state">ON</span></button>
+    </div>
+    <div class="crumbbar">
+      <button id="btn-back" class="back" type="button" title="Back (right-click or Esc)"><span aria-hidden="true">&#8249;</span> Back</button>
+      <h2 id="crumb" class="crumb"></h2>
     </div>
     <div id="tab-notes" class="notice" role="note" hidden></div>
+    <p id="empty" class="empty" role="status" hidden>No items match these filters</p>
     <div id="results" class="results"></div>
-    <p id="empty" class="empty" hidden>No items match these filters</p>
   </section>
 
   <aside class="side" aria-label="Selected item and command queue">
     <div id="card" class="card--empty"></div>
-    <section class="queue" aria-labelledby="queue-head">
-      <h2 id="queue-head" class="queue__head"><span aria-hidden="true">&#9935;</span> Command queue</h2>
+    <section id="queue" class="queue" aria-labelledby="queue-head">
+      <div class="queue__bar">
+        <h2 id="queue-head" class="queue__head"><span aria-hidden="true">&#9935;</span> Command queue <span id="queue-total" class="queue__total">Empty</span></h2>
+        <button id="queue-copy" class="qbtn qbtn--primary" type="button" disabled>Copy all</button>
+        <button id="queue-clear" class="qbtn" type="button" disabled>Clear</button>
+        <button id="queue-close" class="qbtn queue__close" type="button" aria-label="Close queue">&#10005;</button>
+      </div>
       <div id="queue-list" class="queue__list"></div>
+      <details id="queue-details" class="queue__cmds" hidden>
+        <summary>Show commands</summary>
+        <pre id="queue-cmds"></pre>
+      </details>
     </section>
   </aside>
 </main>
@@ -78,9 +93,10 @@
     <span class="foot__note" aria-hidden="true">MODEL LINE 1.2001A · SOURCE CONSOLECOMMANDLIST_2.0.XLSX</span>
   </div>
   <div class="hints">
+    <button id="btn-queue-foot" class="hint hint--queue" type="button" aria-controls="queue" aria-expanded="false"><span class="key" aria-hidden="true">&#9935;</span>Queue (0)</button>
     <button id="btn-copy" class="hint" type="button"><span class="key">C</span>Copy all commands</button>
     <button id="btn-clear" class="hint" type="button"><span class="key">X</span>Clear queue</button>
-    <span class="hint hint--static"><span class="key">ESC</span>Back</span>
+    <span class="hint hint--static"><span class="key">RMB</span><span class="key">ESC</span>Back</span>
   </div>
 </footer>
 
@@ -115,7 +131,8 @@
     <p class="modal__lore">Weapons without a tier scale with your level when spawned.</p>
     <p class="modal__lore">Some commands on the Cheats tab are marked as broken on the current patch by the sheet itself.</p>
     <h3 class="modal__sub">Keys</h3>
-    <p><span class="key">Q</span> <span class="key">E</span> switch tab · <span class="key">/</span> search · <span class="key">C</span> copy all · <span class="key">X</span> clear queue · <span class="key">ESC</span> close card or clear search</p>
+    <p><span class="key">Q</span> <span class="key">E</span> switch tab · <span class="key">/</span> search · <span class="key">C</span> copy all · <span class="key">A</span> or <span class="key">Enter</span> add the selected item · arrow keys move between items · <span class="key">X</span> clear queue · <span class="key">G</span> group versions on/off · <span class="key">ESC</span> or right-click: back (close card, then return to categories)</p>
+    <p>Click a category to open it, click an item to see it, double-click to add it to the queue.</p>
   </div>
   <form method="dialog" class="modal__foot"><button class="hint" type="submit"><span class="key">ESC</span>Close</button></form>
 </dialog>

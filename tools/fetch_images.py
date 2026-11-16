@@ -131,6 +131,8 @@ def main():
     ap.add_argument("--json", default=ROOT / "data/build/items.json")
     ap.add_argument("--limit", type=int, help="download at most N new images")
     ap.add_argument("--refresh", action="store_true", help="re-query the wiki instead of reusing the report")
+    ap.add_argument("--hotlink", action="store_true",
+                    help="don't download; map items to the wiki image URLs (loaded by the visitor's browser)")
     args = ap.parse_args()
     data = json.loads(Path(args.json).read_text(encoding="utf-8"))
     keys = {}
@@ -153,6 +155,9 @@ def main():
     for key, (url, _) in found.items():
         if key in existing:
             by_url.setdefault(url, existing[key])
+        elif args.hotlink:
+            images[key] = re.sub(r"/scale-to-width-down/\d+", "/scale-to-width-down/400", url)
+            continue
         elif url not in by_url and url not in failed:
             if (args.limit is not None and downloaded >= args.limit) or len(failed) >= 3:
                 continue

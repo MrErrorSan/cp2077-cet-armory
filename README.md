@@ -12,10 +12,17 @@ A free, fan-made item browser for Cyberpunk 2077, styled like the in-game invent
 - Filter by type, class and slot
 - Tiers 1 to 5++, plus Iconic and Phantom Liberty filters
 - Search by name or by item code
-- One tile per tier, so each variant is easy to pick
+- Group versions: one tile per item, pick the tier on the card (the highest is used by default)
+- Weapons drill down by type and class (Pistol > Power / Tech / Smart); Clothing by slot and garment type
+- Clothing that still gives Armor in 2.x (77 tactical helmets and vests) is marked, with an "Armor pieces" category
+- Cheats are split into sections; every number in a command is a pre-filled field you can change
+- Points can be taken back: negative amounts, plus Reset attributes / perks commands
+- Pictures of weapons with nudity are hidden by default ("Hide nudity" toggle)
 - Command queue with one-click copy
+- Game-style navigation: click a category to open it, click an item to inspect it, right-click or Esc to go back
+- Queue panel with Copy all, per-item copy and a preview of the full command line
 - Keyboard shortcuts: Q / E / C / X / Esc, and `/` to focus search
-- Works offline, just open the page
+- Works offline (pictures need a connection; without one, tiles show drawn icons)
 - All 12 sheet tabs, including teleports, progress and cheats
 
 ## How to use
@@ -27,7 +34,13 @@ A free, fan-made item browser for Cyberpunk 2077, styled like the in-game invent
 
 ## Run locally
 
-Open `site/index.html` in your browser. No server or install is needed.
+Item pictures are loaded from the Cyberpunk Wiki by your browser. The wiki blocks pictures on pages opened straight from disk (`file://`), so for pictures run a tiny local server:
+
+```
+python -m http.server 8000 --directory site
+```
+
+then open http://localhost:8000/. Opening `site/index.html` directly still works; tiles then show drawn icons instead of pictures.
 
 ## Rebuild data
 
@@ -35,7 +48,7 @@ Requires Python 3 and Node.js. The only data source is `data/source/ConsoleComma
 
 ```
 python -I tools/build_data.py
-python -I tools/fetch_images.py
+python -I tools/fetch_images.py --hotlink
 ```
 
 Tests:
@@ -58,6 +71,7 @@ docs/     plans, specs, screenshot
 
 ## Credits
 
+- Researched additions (not in the sheet), with their sources, are in `data/research/`: clothing armor from the Cyberpunk Wiki item pages, and the reset commands from CDPR's script source (CDPR-Modding-Documentation)
 - Console command list by the CET team and the redmodding Discord #cet-support: https://wiki.redmodding.org/cyber-engine-tweaks/console/console/how-do-i
 - [Cyber Engine Tweaks](https://github.com/maximegmd/CyberEngineTweaks)
 - Item images from the Cyberpunk Wiki: https://cyberpunk.fandom.com

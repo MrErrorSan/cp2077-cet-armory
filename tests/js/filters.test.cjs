@@ -77,3 +77,61 @@ test('tierLabel and rarityVar', () => {
   assert.strictEqual(F.rarityVar('legendary'), 'var(--r-legendary)');
   assert.strictEqual(F.rarityVar(null), 'var(--r-common)');
 });
+
+test('search: every word must match name, code, tags, rarity, tier or group', () => {
+  const w = ITEMS.filter((i) => i.tab === 'weapons');
+  assert.deepStrictEqual(ids(F.filterItems(w, { query: 'legendary sniper' })), ['w1']);
+  assert.deepStrictEqual(ids(F.filterItems(w, { query: 'T5++ pistol' })), []);
+  assert.deepStrictEqual(ids(F.filterItems(w, { query: 'T5+ pistol' })), ['w3']);
+  assert.deepStrictEqual(ids(F.filterItems(w, { query: '  power   PISTOL ' })).sort(), ['w2', 'w3']);
+  assert.deepStrictEqual(ids(F.filterItems(w, { query: 'iconic' })), ['w1']);
+});
+
+test('variantLabel tells same-name presets apart', () => {
+  const v = (name, code) => F.variantLabel(item({ name, code }));
+  assert.strictEqual(v('Ashura', 'Items.Preset_Ashura_Neon'), 'Neon');
+  assert.strictEqual(v('Ashura', 'Items.Preset_Ashura_Default'), '');
+  assert.strictEqual(v('D5 Copperhead', 'Items.Preset_Copperhead_Military_Crowd'), 'Military Crowd');
+  assert.strictEqual(v('Katana', 'Items.Preset_Katana_Arasaka_2077'), 'Arasaka 2077');
+  assert.strictEqual(v('Overture', 'Items.Preset_Psycho_ma_hey_spr_04'), 'Cyberpsycho');
+  assert.strictEqual(v('Overture', 'Items.Preset_Overture_Legendary'), '');
+  assert.strictEqual(F.variantLabel(item({ name: 'Money', code: null })), '');
+});
+
+test('variantLabel splits CamelCase and drops rarity/Lvl/Plus words', () => {
+  const v = (name, code) => F.variantLabel(item({ name, code }));
+  assert.strictEqual(v('Mantis Blades', 'Items.AdvancedMantisBladesChemicalUncommonPlus'), 'Advanced Chemical');
+  assert.strictEqual(v('Ba Xing Chong', 'Items.Recipe_Preset_Zhuo_Eight_Star'), 'Zhuo Eight Star');
+});
+
+test('search for "item" does not match every item through the Items. code prefix', () => {
+  assert.deepStrictEqual(ids(F.filterItems(ITEMS, { query: 'items' })), []);
+});
+
+test('renderCommand fills {choice}, defaulting to the first option', () => {
+  const attr = item({ cmd: 'X:SetAttribute("{choice}", {value})', input: { kind: 'value', choice: { label: 'Attribute', options: ['Strength', 'Cool'] } } });
+  assert.strictEqual(F.renderCommand(attr, { value: '20', choice: 'Cool' }), 'X:SetAttribute("Cool", 20)');
+  assert.strictEqual(F.renderCommand(attr, { value: '20' }), 'X:SetAttribute("Strength", 20)');
+});
+
+test('optionValue returns a string as-is and an object option\'s value', () => {
+  assert.strictEqual(F.optionValue('Strength'), 'Strength');
+  assert.strictEqual(F.optionValue({ label: 'Body', value: 'Strength' }), 'Strength');
+});
+
+test('optionLabel maps a value to its label and falls back to the value', () => {
+  const skill = item({ cmd: 'X.{choice}', input: { kind: 'value', choice: { label: 'Skill', options: [
+    { label: 'Headhunter', value: 'CoolSkill' }, { label: 'Netrunner', value: 'IntelligenceSkill' }] } } });
+  assert.strictEqual(F.optionLabel(skill, 'IntelligenceSkill'), 'Netrunner');
+  assert.strictEqual(F.optionLabel(skill, 'UnknownSkill'), 'UnknownSkill');
+  const plain = item({ input: { kind: 'value', choice: { label: 'A', options: ['Strength', 'Cool'] } } });
+  assert.strictEqual(F.optionLabel(plain, 'Cool'), 'Cool');
+});
+
+test('renderCommand with object options and no choice uses the first option\'s value', () => {
+  const skill = item({ cmd: 'SetLevel(gamedataProficiencyType.{choice}, {value})', input: { kind: 'value', choice: {
+    label: 'Skill', options: [{ label: 'Headhunter', value: 'CoolSkill' }, { label: 'Solo', value: 'StrengthSkill' }] } } });
+  assert.strictEqual(F.renderCommand(skill, { value: '60' }), 'SetLevel(gamedataProficiencyType.CoolSkill, 60)');
+  assert.strictEqual(F.renderCommand(skill, { value: '60', choice: 'StrengthSkill' }),
+    'SetLevel(gamedataProficiencyType.StrengthSkill, 60)');
+});
